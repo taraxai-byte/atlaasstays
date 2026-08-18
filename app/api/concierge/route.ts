@@ -89,45 +89,45 @@ function parseAssistantJson(content: string) {
   return null;
 }
 
-// Zod schema for the Journey Itinerary
+// Tightened Zod schema for the Journey Itinerary (required fields/types)
 const FlightSchema = z.object({
-  from: z.string(),
-  to: z.string(),
+  from: z.string().min(2),
+  to: z.string().min(2),
   departure: z.string().optional(),
   arrival: z.string().optional(),
   airline: z.string().optional(),
-  priceUSD: z.number().optional(),
+  priceUSD: z.number().nonnegative().optional(),
 });
 
 const HotelSchema = z.object({
-  name: z.string().optional(),
-  nights: z.number().optional(),
-  pricePerNightUSD: z.number().optional(),
+  name: z.string().min(1),
+  nights: z.number().int().min(0),
+  pricePerNightUSD: z.number().nonnegative().optional(),
 });
 
 const TransferSchema = z.object({
-  type: z.string().optional(),
-  provider: z.string().optional(),
-  priceUSD: z.number().optional(),
+  type: z.string().min(1).optional(),
+  provider: z.string().min(1).optional(),
+  priceUSD: z.number().nonnegative().optional(),
 });
 
 const ActivitySchema = z.object({
-  day: z.number().optional(),
-  title: z.string().optional(),
+  day: z.number().int().min(1),
+  title: z.string().min(1),
   duration: z.string().optional(),
 });
 
 const ItinerarySchema = z.object({
-  summary: z.string().optional(),
-  destination: z.string().optional(),
-  start_date: z.string().optional(),
-  end_date: z.string().optional(),
-  nights: z.number().optional(),
-  flights: z.array(FlightSchema).optional(),
+  summary: z.string().min(10),
+  destination: z.string().min(2),
+  start_date: z.string().refine((d) => !Number.isNaN(Date.parse(d)), { message: 'start_date must be a valid date string' }),
+  end_date: z.string().refine((d) => !Number.isNaN(Date.parse(d)), { message: 'end_date must be a valid date string' }),
+  nights: z.number().int().min(1),
+  flights: z.array(FlightSchema).min(1),
   hotel: HotelSchema.optional(),
   transfers: z.array(TransferSchema).optional(),
   activities: z.array(ActivitySchema).optional(),
-  notes: z.record(z.any()).optional(),
+  notes: z.object({ disclaimer: z.string().min(5) }).optional(),
 });
 
 export async function POST(request: Request) {
@@ -174,14 +174,14 @@ export async function POST(request: Request) {
       );
     }
 
-    // Validate parsed JSON against the schema
+    // Validate parsed JSON against the tightened schema
     const validation = ItinerarySchema.safeParse(parsed);
     if (!validation.success) {
       // Return structured validation errors
       return NextResponse.json(
         {
           error: 'ITINERARY_SCHEMA_INVALID',
-          message: 'Parsed itinerary did not match the expected schema.',
+          message: 'Parsed itinerary did not match the expected schema (required fields/types were missing or invalid).',
           details: {
             issues: validation.error.format(),
             parsed,
