@@ -19,7 +19,7 @@ export default function Home() {
       const res = await fetch('/api/concierge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ userPrompt: prompt }),
       });
       const data = await res.json();
       setResponse(data.data);
