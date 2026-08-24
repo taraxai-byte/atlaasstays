@@ -1,5 +1,4 @@
-'use 'use client';
-
+'use client';
 
 import React, { useState } from 'react';
 
@@ -8,8 +7,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<any>(null);
 
-  const handleTravelRequest = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleTravelRequest = async () => {
     if (!prompt.trim()) return;
 
     setLoading(true);
@@ -33,7 +31,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between selection:bg-cyan-500">
+    <main className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between">
       <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <span className="text-xl font-black tracking-wider bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
@@ -50,29 +48,30 @@ export default function Home() {
           Tell Atlas where you are and where you want to go.
         </h1>
         <p className="text-sm text-slate-400 text-center mb-8 max-w-xl">
-          AtlaasStays Global Technologies is a premium, AI-first autonomous travel platform. Experience seamless, end-to-end journey orchestration through a single intelligent conversation.
+          AtlaasStays Global Technologies is a premium, AI-first autonomous travel platform.
         </p>
 
-        <form onSubmit={handleTravelRequest} className="w-full flex space-x-2 mb-8">
+        <div className="w-full flex space-x-2 mb-8">
           <input
             type="text"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder="I need a flight from Addis Ababa to Dubai"
+            placeholder="I need a flight from Mogadishu to Nairobi"
             className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-cyan-500 text-slate-100"
             disabled={loading}
           />
           <button
-            type="submit"
+            type="button"
+            onClick={handleTravelRequest}
             className="bg-cyan-600 hover:bg-cyan-500 text-white font-medium text-sm px-6 py-3 rounded-lg transition disabled:opacity-50"
             disabled={loading}
           >
             {loading ? 'Planning...' : 'Plan Journey'}
           </button>
-        </form>
+        </div>
 
         {response && (
-          <div className="w-full bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl animate-in fade-in duration-300">
+          <div className="w-full bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl">
             <h3 className="text-sm font-bold text-cyan-400 uppercase tracking-wider mb-3">AI Travel Agent Response</h3>
             <p className="text-slate-200 text-sm leading-relaxed mb-4">{response.aiResponse || response.error}</p>
             {response.success && response.syncDetails && (
@@ -81,7 +80,7 @@ export default function Home() {
                   Live Supplier Inventory Synced
                 </span>
                 <p className="text-xs text-slate-400 mt-2">
-                  Found <span className="text-slate-200 font-bold">{response.syncDetails.offersCount || 0}</span> real-time flight offers from suppliers and populated your database successfully.
+                  Found <span className="text-slate-200 font-bold">{response.syncDetails.offersCount || 0}</span> real-time flight offers from suppliers.
                 </p>
               </div>
             )}
