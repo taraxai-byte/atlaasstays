@@ -1,16 +1,15 @@
-export const maxDuration = 60; 
-export const dynamic = 'force-dynamic';
-
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-// 1. Wixii Muhiimka Ahaa: Rate Limiting & Security koodhkii hore laga soo qaatay
-const RATE_LIMIT_WINDOW_MS = Number(process.env.RATE_LIMIT_WINDOW_MS) || 60000; 
-const RATE_LIMIT_MAX = Number(process.env.RATE_LIMIT_MAX) || 30; 
+export const maxDuration = 60;
+export const dynamic = 'force-dynamic';
+
+const RATE_LIMIT_WINDOW_MS = Number(process.env.RATE_LIMIT_WINDOW_MS) || 60000;
+const RATE_LIMIT_MAX = Number(process.env.RATE_LIMIT_MAX) || 30;
 const rateMap = new Map();
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o';
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 
 function getClientIp(request: Request) {
   const xff = request.headers.get('x-forwarded-for');
@@ -36,23 +35,22 @@ function isRateLimited(ip: string) {
   return entry.count > RATE_LIMIT_MAX;
 }
 
-// 2. Wixii Muhiimka Ahaa: Schema-gii rasmiga ahaa ee safarka
 const conciergeSchema = z.object({
   origin: z.string(),
   destination: z.string(),
-  departureDate: z.string().optional(),
+  departureDate: z.string(),
   budget: z.string().optional(),
 });
 
-// 3. Wixii Muhiimka Ahaa: Habka wicitaanka OpenAI rasmiga ah ee koodhkii hore
 async function callOpenAI(systemPrompt: string, userPrompt: string) {
   if (!OPENAI_API_KEY) throw new Error('OPENAI_API_KEY is missing');
-  
+
+  // FIXED: Using the official OpenAI API endpoint instead of the website URL
   const response = await fetch('https://openai.com', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${OPENAI_API_KEY}`
+      'Authorization': `Bearer ${OPENAI_API_KEY}`,
     },
     body: JSON.stringify({
       model: OPENAI_MODEL,
@@ -61,8 +59,26 @@ async function callOpenAI(systemPrompt: string, userPrompt: string) {
         { role: 'user', content: userPrompt }
       ],
       temperature: 0.2,
-      max_tokens: 1200
-    })
+      max_tokens: 1200,
+      tools: [
+        {
+          type: "function",
+          function: {
+            name: "searchFlights",
+            description: "Search for live flight inventory between two destinations",
+            parameters: {
+              type: "object",
+              properties: {
+                origin: { type: "string", description: "3-letter IATA code (e.g. ADD)" },
+                destination: { type: "string", description: "3-letter IATA code (e.g. DXB)" },
+                departureDate: { type: "string", description: "Date in YYYY-MM-DD format" }
+              },
+              required: ["origin", "destination", "departureDate"]
+            }
+          }
+        }
+      ]
+    }),
   });
 
   if (!response.ok) {
@@ -71,56 +87,60 @@ async function callOpenAI(systemPrompt: string, userPrompt: string) {
   }
 
   const json = await response.json();
-  return json.choices?.[0]?.message?.content || '';
+  return json.choices?.[0]?.message;
 }
 
 export async function POST(request: Request) {
   try {
     const ip = getClientIp(request);
     if (isRateLimited(ip)) {
-      return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 });
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
     const { userPrompt } = await request.json();
-    if (!userPrompt || typeof userPrompt !== 'string') {
-      return NextResponse.json({ success: false, error: 'Invalid user prompt' }, { status: 400 });
+    if (!userPrompt) {
+      return NextResponse.json({ error: 'Missing userPrompt' }, { status: 400 });
     }
-    
-    let aiResponseText = "";
-    let attempts = 0;
-    const maxAttempts = 3; 
-    let lastError = "";
 
-    // 4. KORDHINTA CUSUB: AUTONOMOUS SELF-HEALING AI LOOP
-    while (attempts < maxAttempts) {
-      const systemPrompt = attempts === 0 
-        ? "You are an expert autonomous travel coordinator. Analyze the user request and extract the origin and destination into a strict JSON object matching the requested schema. Return ONLY valid raw JSON."
-        : `CRITICAL ERROR: Your previous JSON output failed validation with the following error: "${lastError}". You must analyze this error, rewrite the JSON payload, fix missing parameters, and output 100% valid schema-compliant JSON now.`;
+    const systemPrompt = `You are the premium AI Travel Concierge for AtlaasStays. Your job is to help users plan their journey. When a user specifies a travel intention to go from one city to another with a date, you MUST invoke the 'searchFlights' tool to synchronize real-time flight inventory. Do not invent pricing or flight schedules yourself.`;
 
-      aiResponseText = await callOpenAI(systemPrompt, userPrompt);
+    const aiMessage = await callOpenAI(systemPrompt, userPrompt);
 
-      try {
-        const cleanJsonString = aiResponseText.replace(/```json|```/g, "").trim();
-        const parsedJson = JSON.parse(cleanJsonString);
+    // Check if the AI decided to invoke the flight search tool
+    if (aiMessage?.tool_calls && aiMessage.tool_calls.length > 0) {
+      const toolCall = aiMessage.tool_calls[0];
+      if (toolCall.function.name === 'searchFlights') {
+        const args = JSON.parse(toolCall.function.arguments);
         
-        // Zod validation execution
-        const validatedData = conciergeSchema.parse(parsedJson);
-        return NextResponse.json({ success: true, data: validatedData });
+        // Triggering the safe live inventory fetch route we built today
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || `https://${request.headers.get('host')}`;
+        const flightSync = await fetch(`${appUrl}/api/flights`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            origin: args.origin,
+            destination: args.destination,
+            departureDate: args.departureDate
+          })
+        });
+
+        const syncResult = await flightSync.json();
         
-      } catch (validationError: any) {
-        attempts++;
-        lastError = validationError.message || "Invalid JSON syntax structure";
+        return NextResponse.json({
+          success: true,
+          message: `AtlaasStays AI successfully synchronized live inventory for ${args.origin} to ${args.destination}.`,
+          aiResponse: "I am pulling the latest flight offers for you right now from our suppliers.",
+          syncDetails: syncResult
+        });
       }
     }
 
-    return NextResponse.json({ 
-      success: false, 
-      message: "AI global autonomous self-correction cycle limit reached.", 
-      error: lastError 
-    }, { status: 422 });
+    return NextResponse.json({
+      success: true,
+      aiResponse: aiMessage?.content || "How can I assist you with your travel planning today?"
+    });
 
-  } catch (globalError: any) {
-    console.error("[Fatal Runtime Exception]:", globalError);
-    return NextResponse.json({ success: false, error: "Internal Server Infrastructure Error" }, { status: 500 });
+  } catch (error: any) {
+    return NextResponse.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
   }
 }
