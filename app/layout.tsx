@@ -1,7 +1,8 @@
+import './globals.css';
 import React from 'react';
 
 export const metadata = {
-  title: 'ATLAAS Stays',
+  title: 'ATLMS Stays',
   description: 'ATLAAS Stays - Powered by Next.js'
 };
 
