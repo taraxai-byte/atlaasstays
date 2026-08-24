@@ -18,7 +18,6 @@ export default function Home() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userPrompt: prompt }),
-
       });
       
       const data = await res.json();
@@ -154,7 +153,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* 3. CAR RENTALS / GAADIIDKA */}
+                {/* 3. CAR RENTALS */}
                 <div>
                   <h4 className="text-md font-bold text-slate-300 mb-3 px-1">🚗 Ground Transport & Car Rentals</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -171,7 +170,7 @@ export default function Home() {
                             <div className="text-xs text-slate-400">Airport Pickup Included • Unlimited Mileage</div>
                           </div>
                           <div className="text-right">
-                            <span className="text-xl font-black text-emerald-400">${index === 0 ? '$120' : '$45'}</span>
+                            <span className="text-xl font-black text-emerald-400">${index === 0 ? 120 : 45}</span>
                             <div className="text-[10px] text-slate-500">per day</div>
                           </div>
                         </div>
@@ -179,3 +178,4 @@ export default function Home() {
                           <span className="text-xs text-slate-400">Insurance: Comprehensive</span>
                           <button className="bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold px-4 py-2 rounded-md transition">
                             Rent Car
+                          </button>
