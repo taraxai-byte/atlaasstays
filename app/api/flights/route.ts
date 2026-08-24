@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { neon } from '@neondatabase/serverless';
 
 export async function POST(request: Request) {
   try {
@@ -40,29 +39,27 @@ export async function POST(request: Request) {
     });
 
     if (!duffelResponse.ok) {
-      return NextResponse.json({ error: 'Failed to fetch from supplier' }, { status: 500 });
+      const errText = await duffelResponse.text();
+      return NextResponse.json({ error: 'Supplier API error', details: errText }, { status: 500 });
     }
 
     const duffelData = await duffelResponse.json();
     const flightOffers = duffelData?.data?.offers || [];
 
     if (flightOffers.length > 0) {
-      const sql = neon(databaseUrl);
-      for (const offer of flightOffers) {
-        await sql(
-          `INSERT INTO bookable_products (id, origin, destination, departure_date, price, provider, status)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)
-           ON CONFLICT (id) DO UPDATE SET price = $5, status = $7`,
-          [
-            offer.id,
-            origin,
-            destination,
-            departureDate,
-            offer.total_amount,
-            offer.owner?.name || 'Unknown Airline',
-            'available'
-          ]
-        );
+      try {
+        const postgres = require('postgres');
+        const sql = postgres(databaseUrl, { ssl: 'require' });
+        
+        for (const offer of flightOffers) {
+          await sql`
+            INSERT INTO bookable_products (id, origin, destination, departure_date, price, provider, status)
+            VALUES (${offer.id}, ${origin}, ${destination}, ${departureDate}, ${offer.total_amount}, ${offer.owner?.name || 'Unknown Airline'}, 'available')
+            ON CONFLICT (id) DO UPDATE SET price = ${offer.total_amount}, status = 'available';
+          `;
+        }
+      } catch (dbError: any) {
+        console.error("Database storage skipped or failed:", dbError.message);
       }
     }
 
