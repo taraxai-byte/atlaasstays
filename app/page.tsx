@@ -19,7 +19,7 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userPrompt: prompt }),
       });
-      
+
       const data = await res.json();
       setResponse(data);
     } catch (error) {
@@ -48,7 +48,7 @@ export default function Home() {
           Tell Atlas where you are and where you want to go.
         </h1>
         <p className="text-sm text-slate-400 text-center mb-8 max-w-xl">
-          AtlaasStays Global Technologies is a premium, AI-first autonomous travel platform syncing flights, hotels, and ground transport instantly.
+          AtlaasStays Global Technologies is a premium, AI-first autonomous travel platform syncing flights, hotels, and cars.
         </p>
 
         <div className="w-full flex space-x-2 mb-8">
@@ -57,125 +57,31 @@ export default function Home() {
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="I need a flight from Mogadishu to Nairobi, a hotel, and a car"
-            className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-cyan-500 text-slate-100"
-            disabled={loading}
+            className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-cyan-500"
           />
           <button
             type="button"
             onClick={handleTravelRequest}
-            className="bg-cyan-600 hover:bg-cyan-500 text-white font-medium text-sm px-6 py-3 rounded-lg transition disabled:opacity-50"
             disabled={loading}
+            className="bg-cyan-600 hover:bg-cyan-500 text-white font-medium text-sm px-6 py-3 rounded-lg transition disabled:opacity-50"
           >
             {loading ? 'Searching Inventory...' : 'Plan Journey'}
           </button>
         </div>
 
         {response && (
-          <div className="w-full space-y-6 animate-in fade-in duration-300">
-            {/* AI Confirmation Box */}
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl">
-              <h3 className="text-sm font-bold text-cyan-400 uppercase tracking-wider mb-3">AI Travel Agent Response</h3>
-              <p className="text-slate-200 text-sm leading-relaxed mb-4">{response.aiResponse || response.error}</p>
-              
-              {response.success && (
-                <div className="border-t border-slate-800 pt-4 mt-4">
-                  <span className="inline-flex items-center text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
-                    🟢 Live Supplier Inventory Synced
-                  </span>
-                  <p className="text-xs text-slate-400 mt-2">
-                    Successfully loaded real-time inventory from global travel suppliers.
-                  </p>
-                </div>
-              )}
-            </div>
+          <div className="w-full space-y-6 bg-slate-900 border border-slate-800 p-6 rounded-xl">
+            <h3 className="font-bold text-cyan-400">AI Concierge Response:</h3>
+            <pre className="text-xs bg-slate-950 p-4 rounded-lg overflow-x-auto text-slate-300">
+              {JSON.stringify(response, null, 2)}
+            </pre>
+          </div>
+        )}
+      </div>
 
-            {response.success && (
-              <div className="space-y-6">
-                {/* 1. FLIGHTS */}
-                <div>
-                  <h4 className="text-md font-bold text-slate-300 mb-3 px-1">✈️ Available Flight Offers</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[...Array(2)].map((_, index) => (
-                      <div key={index} className="bg-slate-900 border border-slate-800 rounded-xl p-5 hover:border-cyan-500/30 transition flex flex-col justify-between shadow-md">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <span className="text-xs font-bold text-cyan-400 uppercase bg-cyan-500/5 px-2 py-0.5 rounded border border-cyan-500/10">
-                              {index === 0 ? 'Daallo Airlines' : 'Freedom Airline'}
-                            </span>
-                            <div className="text-lg font-bold mt-2">MGQ → NBO</div>
-                            <div className="text-xs text-slate-400">Direct • Economy</div>
-                          </div>
-                          <div className="text-right">
-                            <span className="text-xl font-black text-emerald-400">${295 + (index * 20)}</span>
-                            <div className="text-[10px] text-slate-500">incl. taxes</div>
-                          </div>
-                        </div>
-                        <div className="border-t border-slate-800/60 pt-3 mt-4 flex items-center justify-between">
-                          <span className="text-xs text-slate-400">Departure: Next Week</span>
-                          <button className="bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold px-4 py-2 rounded-md transition">
-                            Book Flight
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 2. HOTELS */}
-                <div>
-                  <h4 className="text-md font-bold text-slate-300 mb-3 px-1">🏨 Recommended Premium Hotels</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[...Array(2)].map((_, index) => (
-                      <div key={index} className="bg-slate-900 border border-slate-800 rounded-xl p-5 hover:border-cyan-500/30 transition flex flex-col justify-between shadow-md">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <span className="text-xs font-bold text-yellow-500 uppercase bg-yellow-500/5 px-2 py-0.5 rounded border border-yellow-500/10">
-                              ⭐⭐⭐⭐⭐ Luxury
-                            </span>
-                            <div className="text-lg font-bold mt-2">
-                              {index === 0 ? 'Radisson Blu Hotel' : 'Villa Rosa Kempinski'}
-                            </div>
-                            <div className="text-xs text-slate-400">Nairobi • Free WiFi & Breakfast</div>
-                          </div>
-                          <div className="text-right">
-                            <span className="text-xl font-black text-emerald-400">${140 + (index * 45)}</span>
-                            <div className="text-[10px] text-slate-500">per night</div>
-                          </div>
-                        </div>
-                        <div className="border-t border-slate-800/60 pt-3 mt-4 flex items-center justify-between">
-                          <span className="text-xs text-slate-400">Cancellation: Free</span>
-                          <button className="bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold px-4 py-2 rounded-md transition">
-                            Book Hotel
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 3. CAR RENTALS */}
-                <div>
-                  <h4 className="text-md font-bold text-slate-300 mb-3 px-1">🚗 Ground Transport & Car Rentals</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[...Array(2)].map((_, index) => (
-                      <div key={index} className="bg-slate-900 border border-slate-800 rounded-xl p-5 hover:border-cyan-500/30 transition flex flex-col justify-between shadow-md">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <span className="text-xs font-bold text-orange-400 uppercase bg-orange-500/5 px-2 py-0.5 rounded border border-orange-500/10">
-                              {index === 0 ? 'SUV Luxury' : 'Sedan Comfort'}
-                            </span>
-                            <div className="text-lg font-bold mt-2">
-                              {index === 0 ? 'Toyota Land Cruiser' : 'Toyota Premio / Fielder'}
-                            </div>
-                            <div className="text-xs text-slate-400">Airport Pickup Included • Unlimited Mileage</div>
-                          </div>
-                          <div className="text-right">
-                            <span className="text-xl font-black text-emerald-400">${index === 0 ? 120 : 45}</span>
-                            <div className="text-[10px] text-slate-500">per day</div>
-                          </div>
-                        </div>
-                        <div className="border-t border-slate-800/60 pt-3 mt-4 flex items-center justify-between">
-                          <span className="text-xs text-slate-400">Insurance: Comprehensive</span>
-                          <button className="bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold px-4 py-2 rounded-md transition">
-                            Rent Car
-                          </button>
+      <footer className="w-full border-t border-slate-800 py-6 text-center text-xs text-slate-500">
+        &copy; 2026 AtlaasStays Global Technologies. All rights reserved.
+      </footer>
+    </main>
+  );
+}
