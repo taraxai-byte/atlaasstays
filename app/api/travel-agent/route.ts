@@ -45,8 +45,10 @@ export async function POST(req: Request) {
       response_format: { type: 'json_object' }
     });
 
-    const aiContent = response.choices[0]?.message?.content || '{}';
-    const aiResponse = JSON.parse(aiContent);
+    const aiContent = response.choices?.[0]?.message?.content || '{}';
+const aiResponse = JSON.parse(aiContent);
+
+    
 
     return NextResponse.json(aiResponse);
 
