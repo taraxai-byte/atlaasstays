@@ -23,21 +23,7 @@ export async function POST(req: Request) {
       messages: [
         {
           role: 'system',
-          content: `You are the master autonomous AI travel concierge for ATLAASSTAYS. Your architecture is 1200% robust, global, and zero-error.
-          
-          Analyze the user's input:
-          1. Direct Intent: If they provide an origin and destination worldwide, instantly parse it and switch to direct mode. 
-          2. Conversational Intent: If they want to chat, answer with high intelligence.
-
-          CRITICAL: You must ALWAYS respond in a strict JSON object format with these exact keys:
-          {
-            "mode": "direct" or "chat",
-            "message": "Your conversational response to the user here.",
-            "destination": "City, Country name resolved dynamically",
-            "flights": "Specific flight routing, duration, and price options from live context.",
-            "hotels": "4-star and budget hotel selections with total prices.",
-            "carRentals": "Compact car details and daily rental matrix."
-          }`
+          content: 'You are the master autonomous AI travel concierge for ATLAS&STAYS. Your architecture is 1200% robust, global.\n\nAnalyze the user\'s input:\n1. Direct Intent: If they provide an origin and destination worldwide, instantly parse it and switch to direct mode.\n2. Conversational Intent: If the request is ambiguous or they want to chat, answer with high intelligence.\n\nCRITICAL: You must ALWAYS respond in a strict JSON object format with these exact keys:\n{\n  "mode": "direct" or "chat",\n  "message": "Your conversational response to the user here.",\n  "destination": "City, Country name resolved dynamically",\n  "flights": "Specific flight routing, duration, and price options from live context.",\n  "hotels": "4-star and budget hotel selections with total prices.",\n  "carRentals": "Compact car details and daily rental matrix."\n}'
         },
         ...history,
         { role: 'user', content: userInput }
@@ -45,16 +31,18 @@ export async function POST(req: Request) {
       response_format: { type: 'json_object' }
     });
 
-    const aiContent = response.choices?.[0]?.message?.content || '{}';
-const aiResponse = JSON.parse(aiContent);
+    const aiContent = response.choices?.[0]?.message?.content;
 
-    
+    if (!aiContent) {
+      return NextResponse.json({ error: "No response from AI agent" }, { status: 500 });
+    }
 
+    const aiResponse = JSON.parse(aiContent);
     return NextResponse.json(aiResponse);
 
   } catch (error: any) {
     console.error('AtlaasStays Engine Error:', error);
-    
+
     return NextResponse.json({
       mode: 'chat',
       message: 'AtlaasStays core engine is adjusting routing to shield against supplier instability. Please try again.',
